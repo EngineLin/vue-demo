@@ -1,23 +1,17 @@
 <template>
   <div>
     <table class="table table-striped table-condensed">
+
+      <!-- 這個範圍內的按照資料重複渲染 -->
       <tr v-for="photo in photos" :key="photo.id">
-        <td>{{ photo.title }}</td>
+        <td> {{ photo.title }} </td>
         <td><img :src="photo.file_location" class="img-thumbnail"></td>
-
-        <td>
-          <!-- 連結到當前 photo 的 show 路由 -->
-          <router-link
-            class="btn btn-info"
-            :to="{ path: '/photo/show', params: { photo: photo }, props: true }"
-          >
-            Show
-          </router-link>
-        </td>
-
-        <td><router-link class="btn btn-success" to="/photo/edit">Edit</router-link></td>
-        <td><button class="btn btn-danger">Destroy</button></td>
+        <td><router-link class="btn btn-info" :to="'/photo/' + photo.id">Show</router-link></td>
+        <td><router-link class="btn btn-success" :to="'/photo/edit/' + photo.id">Edit</router-link></td>
+        <td><button class="btn btn-danger" @click="destroyPhoto(photo.id)">Destroy</button></td>
       </tr>
+      <!-- end -->
+
     </table>
 
     <div class="row">
@@ -27,65 +21,56 @@
 </template>
 
 <script>
-import $ from 'jquery'
+import $ from 'jquery';
 
 export default {
-  name: "photo",
+  name: 'photo',
 
   created() {
-    // $.ajax({
-    //   url: 'https://lighthouse-photo-api.herokuapp.com/api/v1/photos',
-    //   type: 'GET',
-    //   dataType: 'json',
-    //   success(res) {
-    //     this.photos = res.data
-    //   },
-    // })
-    this.photos = [
-      {
-        "id": 1,
-        "title": "Hi~ this is a photo",
-        "description": "Hi~ this is a photo",
-        "file_location": {
-          "url": "/uploads/photo/file_location/1/26677973_203322050230698_3595655715217896515_o.jpg",
-        },
-      },
-      {
-        "id": 2,
-        "title": "Code Kata",
-        "description": "Code Kata",
-        "file_location": {
-          "url": "/uploads/photo/file_location/2/shutterstock_699352858.jpg",
-        },
-      },
-      {
-        "id": 3,
-        "title": "Git Collaboration",
-        "description": "Git Collaboration",
-        "file_location": {
-          "url": "/uploads/photo/file_location/3/shutterstock_345728627.jpg",
-        },
-      },
-      {
-        "id": 4,
-        "title": "Git Collaboration",
-        "description": "Git Collaboration",
-        "file_location": {
-          "url": "../assets/logo.png",
-        },
-      },
-    ]
+    this.loadData();
   },
 
   data() {
     return {
       photos: [],
     };
-  }
+  },
+
+  methods: {
+    destroyPhoto(id) {
+      const that = this;
+      const token = sessionStorage.getItem('myToken');
+      const myData = { auth_token: token };
+      $.ajax({
+        url:
+          'https://cors-anywhere.herokuapp.com/https://lighthouse-photo-api.herokuapp.com/api/v1/photos/' +
+          id,
+        type: 'DELETE',
+        data: myData,
+        error(err) {
+          console.log(err);
+        },
+        success(res) {
+          alert(res.message);
+          that.loadData();
+        },
+      });
+    },
+    loadData() {
+      const that = this;
+      $.ajax({
+        url:
+          'https://cors-anywhere.herokuapp.com/https://lighthouse-photo-api.herokuapp.com/api/v1/photos',
+        type: 'GET',
+        dataType: 'json',
+        error(err) {
+          console.log(err);
+        },
+        success(res) {
+          that.photos = res.data;
+        },
+      });
+    },
+  },
 };
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-
-</style>

@@ -1,76 +1,109 @@
 <template>
+<div class="container-fluid">
 
-  <div class="container">
-    <nav class="navbar navbar-default">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle collapsed"
-            data-toggle="collapse"
-            data-target="#bs-example-navbar-collapse-1"
-            aria-expanded="false"
-          >
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          
-          <router-link class="btn btn-outline-primary" to="/">我的家庭相簿</router-link>
-        </div>
+  <nav class="navbar navbar-expand-lg navbar-light bg-dark">
+    <button
+      type="button"
+      class="navbar-toggler"
+      data-toggle="collapse"
+      data-target="#user-info"
+      aria-expanded="false"
+      aria-controls="user-info"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <a class="navbar-brand text-light" href="#">Photo Album</a>
+    <div class="collapse navbar-collapse" id="user-info">
+      <ul class="navbar-nav">
+        <li class="nav-item mt-2 mt-lg-0"><router-link class="btn btn-outline-light" to="/">我的家庭相簿</router-link></li>
 
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            <!-- <li><%= link_to 'All User', users_path %></li> -->
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-
-            <div v-if="user">
-              <li><p class="navbar-text">Hi, {{ user.email }}</p></li>
-              <!-- <li><%= link_to('Log out', destroy_user_session_path, method: :delete) %></li>
-              <li><%= link_to('Edit Profile', edit_user_registration_path) %></li> -->
-            </div>
-
-            <div v-else>
-              <router-link role="li" :to="{path: '/user/registration'}">Sign up</router-link>
-              <router-link role="li" :to="{path: '/user/session'}"></router-link>
-              <!-- <li><%= link_to('Sign up', new_user_registration_path) %></li> -->
-              <!-- <li><%= link_to('Log in', new_user_session_path) %></li>
-              <li><%= link_to "Sign in with Facebook", user_facebook_omniauth_authorize_path %></li> -->
-            </div>
-
-          </ul>
-        </div>
-      </div>
-
-    </nav>
-    <div v-if="user">
-      <p class="pull-right">你的 API Token：<code>{{ user.authentication_token }}</code></p>
+        <!-- if is log in -->
+        <template v-if="isLogin">
+          <li class="nav-item ml-lg-5 mt-2 mt-lg-0 text-light d-flex align-items-center">Hi, {{ email }}</li>
+          <li class="nav-item ml-lg-5 mt-2 mt-lg-0"><button class="btn btn-secondary" @click="logOut">Log out</button></li>
+        </template>
+        <!-- if not log in -->
+        <template v-else>
+          <li class="nav-item ml-lg-5 mt-2 mt-lg-0"><router-link class="btn btn-success" to="/user/signup">Sign up</router-link></li>
+          <li class="nav-item ml-lg-3 mt-2 mt-lg-0"><router-link class="btn btn-primary" to="/user/login">Log in</router-link></li>
+        </template>
+        <!-- end -->
+      </ul>
     </div>
+  </nav>
 
-    <!-- <% if flash[:notice] %>
-      <div class="alert alert-success" role="alert"><%= notice %></div>
-    <% elsif flash[:alert] %>
-      <div class="alert alert-danger" role="alert"><%= alert %></div>
-    <% end %> -->
-
-    <router-view></router-view>
+  <div v-if="authentication_token">
+    <p class="pull-right ml-5">您的 API Token：<code>{{ authentication_token }}</code></p>
   </div>
 
+  <div class="container">
+    <router-view></router-view>
+  </div>
+</div>
 </template>
 
 <script>
+import $ from 'jquery';
+
 export default {
   name: 'App',
 
+  created() {
+    this.$bus.$on('checkLoginState', () => {
+      this.checkLoginState();
+    });
+    this.checkLoginState();
+  },
+
   data: () => {
     return {
-      user: {
-        email: 'APHCamp@exaple.com',
-        authentication_token: 'fake_token',
-      },
-    }
-  }
-}
+      isLogin: false,
+      authentication_token: '',
+      email: '',
+    };
+  },
+
+  methods: {
+    checkLoginState() {
+      // 如果 sessionStorage 中沒有名稱為 myToken 的資料則回傳 null
+      const token = sessionStorage.getItem('myToken');
+      const email = sessionStorage.getItem('myEmail');
+      if (token) {
+        this.isLogin = true;
+        this.authentication_token = token;
+        this.email = email;
+      } else {
+        this.isLogin = false;
+        this.authentication_token = '';
+        this.email = '';
+      }
+    },
+    logOut() {
+      const that = this;
+      const myData = { auth_token: this.authentication_token };
+
+      $.ajax({
+        url:
+          'https://cors-anywhere.herokuapp.com/https://lighthouse-photo-api.herokuapp.com/api/v1/logout',
+        data: myData,
+        type: 'POST',
+        error: res => {
+          alert('Log out error: ' + res.statusText);
+        },
+        success: res => {
+          alert('Log out successfully');
+          sessionStorage.removeItem('myToken');
+          sessionStorage.removeItem('myEmail');
+          that.checkLoginState();
+          that.$router.push('/');
+        },
+      });
+    },
+  },
+
+  beforeDestroy: () => {
+    this.$bus.$off('checkLoginState');
+  },
+};
 </script>
